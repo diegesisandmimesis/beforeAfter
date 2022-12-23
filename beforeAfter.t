@@ -2,13 +2,19 @@
 //
 // beforeAfter.t
 //
-//	Provides a mechanism by which objects can subscribe to global
-//	beforeAction() and afterAction() notifications.
+//	Provides a mechanism by which an object can globally subscribe
+//	to action notifications.  Subscribed objects will have their
+//	globalBeforeAction() and globalAfterAction() methods called for
+//	every action, similar to how T3's native beforeAction() and
+//	afterAction() work, except the global methods are called on the
+//	subscribed object independent of scope.
 //
-//	T3 lets objects add themselves to individual actions via
-//	Action.addBeforeAfterObj(), but there's no way to do this in bulk.
+//	T3 does something similar by letting objects add themselves to
+//	individual actions via Action.addBeforeAfterObj(), but there's no way
+//	to do this in bulk.
+//
 //	We just create a controller object that manages individual objects'
-//	subscriptions and insert IT (the controller object) to every
+//	subscriptions and insert it (the controller object) to every
 // 	Action instance via addBeforeAfterObj() (by tweaking
 //	Action.construct()).
 //
@@ -27,6 +33,21 @@ beforeAfterModuleID: ModuleID {
         listingOrder = 99
 }
 
+modify Thing
+	// Stub methods to be overwritten by instances.
+	globalBeforeAction() {}
+	globalAfterAction() {}
+;
+
+// Convenience class that auto-subscribes on init.
+class BeforeAfterThing: Thing
+	initializeThing() {
+		inherited();
+		gSubscribeBeforeAfter(self);
+	}
+
+;
+
 // Big ol ugly kludge to insert the controller object to every beforeAction()
 // and afterAction() every turn.
 modify Action
@@ -36,18 +57,28 @@ modify Action
 	}
 ;
 
+// The controller for the whole mess.
+// Maintains its own list of subscribers and pings each of them whenever
+// its own beforeAction() and afterAction() methods are called.  Which is
+// every time an action fires, because of what we did to Action above.
 beforeAfterController: object
-	subscribers = static []
+	subscribers = nil
 
 	// Add an object to our notification list
 	subscribe(obj) {
+		if(subscribers == nil)
+			subscribers = new Vector(16);
+
 		if(subscribers.indexOf(obj) == nil)
 			subscribers += obj;
 	}
 
-	// Remove an object from the list;
+	// Remove an object from the list.
 	detach(obj) {
 		local idx;
+
+		if(subscribers == nil)
+			return(nil);
 
 		idx = subscribers.indexOf(obj);
 		if(idx == nil)
@@ -57,10 +88,13 @@ beforeAfterController: object
 		return(true);
 	}
 
+	// This is where the magic happens.  Notify all our subscribers.
 	beforeAction() {
-		subscribers.forEach(function(o) { o.beforeAction(); });
+		if(subscribers == nil) return;
+		subscribers.forEach(function(o) { o.globalBeforeAction(); });
 	}
 	afterAction() {
-		subscribers.forEach(function(o) { o.afterAction(); });
+		if(subscribers == nil) return;
+		subscribers.forEach(function(o) { o.globalAfterAction(); });
 	}
 ;
