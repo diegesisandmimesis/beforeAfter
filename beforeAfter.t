@@ -27,7 +27,7 @@
 
 // Module ID for the library
 beforeAfterModuleID: ModuleID {
-        name = 'beforeAfter Library'
+        name = 'Before After Library'
         byline = 'Diegesis & Mimesis'
         version = '1.0'
         listingOrder = 99
