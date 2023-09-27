@@ -70,7 +70,7 @@ beforeAfterController: object
 			subscribers = new Vector(16);
 
 		if(subscribers.indexOf(obj) == nil)
-			subscribers += obj;
+			subscribers.append(obj);
 	}
 
 	// Remove an object from the list.
@@ -87,6 +87,9 @@ beforeAfterController: object
 
 		return(true);
 	}
+
+	// Semantic sugar.
+	unsubscribe(obj) { return(detach(obj)); }
 
 	// This is where the magic happens.  Notify all our subscribers.
 	beforeAction() {
